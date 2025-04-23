@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Fishing Spots in Wellington</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background-color: #2c3e50;
+      color: white;
+      padding: 1em;
+      text-align: center;
+      font-size: clamp(1.2em, 4vw, 1.5em);
+    }
+
+    #search-container {
+      position: relative;
+      width: 100%;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+
+    #search {
+      width: 100%;
+      padding: 12px;
+      font-size: clamp(0.9em, 3vw, 1em);
+      border: none;
+      border-radius: 25px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: box-shadow 0.3s ease-in-out;
+      box-sizing: border-box;
+    }
+
+    #search:hover {
+      box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+    }
+
+    #search:focus {
+      outline: none;
+      border: 2px solid #FFDD00;
+    }
+
+    #spotList {
+      position: absolute;
+      top: 60px;
+      left: 12px;
+      right: 12px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .spot {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      font-size: clamp(0.85em, 2.5vw, 0.9em);
+      line-height: 1.4;
+      min-height: 44px; /* Minimum touch target size */
+    }
+
+    .spot:last-child {
+      border-bottom: none;
+    }
+
+    .spot:hover, .spot:focus {
+      background-color: #f2f2f2;
+      outline: none;
+    }
+
+    #map {
+      flex: 1;
+      min-height: 50vh;
+      margin-top: 10px;
+    }
+
+    footer {
+      background: #f4f4f4;
+      padding: 1em;
+      font-size: clamp(0.75em, 2.5vw, 0.8em);
+    }
+
+    #caution {
+      background: #fff8c4;
+      padding: 8px;
+      border-left: 5px solid #f1c40f;
+      margin-bottom: 1em;
+      font-size: clamp(0.7em, 2.5vw, 0.8em);
+    }
+
+    #donate-button {
+      display: inline-block;
+      margin-top: 10px;
+      background-color: #FFDD00;
+      color: #000;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: clamp(0.7em, 2.5vw, 0.8em);
+      min-height: 44px;
+      line-height: 44px;
+    }
+
+    footer a {
+      color: #0055aa; /* Improved contrast */
+      text-decoration: underline;
+    }
+
+    footer p.developer {
+      font-size: clamp(0.65em, 2vw, 0.75em);
+    }
+
+    #disclaimer {
+      font-size: clamp(0.65em, 2vw, 0.75em);
+    }
+
+    #submit-spot-form {
+      margin-top: 1em;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #submit-spot-form label {
+      font-weight: bold;
+      font-size: clamp(0.75em, 2.5vw, 0.8em);
+    }
+
+    #submit-spot-form input,
+    #submit-spot-form textarea,
+    #submit-spot-form select {
+      padding: 8px;
+      font-size: clamp(0.85em, 2.5vw, 0.9em);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 44px;
+    }
+
+    #submit-spot-form textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    #submit-spot-form button {
+      background-color: #FFDD00;
+      color: #000;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: clamp(0.85em, 2.5vw, 0.9em);
+      min-height: 44px;
+    }
+
+    #submit-spot-form button:hover {
+      background-color: #e6c700;
+    }
+
+    /* Tablet and small desktop */
+    @media (max-width: 768px) {
+      #map {
+        min-height: 400px;
+      }
+      #spotList {
+        top: 55px;
+        max-height: 150px;
+      }
+      header {
+        padding: 0.8em;
+      }
+      #search-container {
+        padding: 8px;
+      }
+      #submit-spot-form input,
+      #submit-spot-form textarea,
+      #submit-spot-form select {
+        font-size: 0.9em;
+      }
+      #submit-spot-form button {
+        font-size: 0.9em;
+      }
+    }
+
+    /* Small mobile devices */
+    @media (max-width: 480px) {
+      #map {
+        min-height: 300px;
+      }
+      #spotList {
+        top: 50px;
+        left: 8px;
+        right: 8px;
+        max-height: 120px;
+      }
+      #search {
+        padding: 10px;
+        font-size: 0.9em;
+      }
+      header {
+        font-size: 1.2em;
+        padding: 0.6em;
+      }
+      #search-container {
+        padding: 6px;
+      }
+      .spot {
+        padding: 10px;
+        font-size: 0.85em;
+      }
+      footer {
+        padding: 0.8em;
+      }
+      #submit-spot-form input,
+      #submit-spot-form textarea,
+      #submit-spot-form select {
+        font-size: 0.85em;
+      }
+      #submit-spot-form button {
+        font-size: 0.85em;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    Fishing Spots in Wellington
+  </header>
+
+  <div id="search-container">
+    <input
+      type="text"
+      id="search"
+      placeholder="Search for a fishing spot..."
+      aria-label="Search for fishing spots in Wellington"
+      onkeyup="filterSpots()"
+    >
+    <div id="spotList" role="dialog" aria-label="Search results"></div>
+  </div>
+
+  <div id="map" role="region" aria-label="Map of fishing spots in Wellington"></div>
+
+  <footer>
+    <div id="caution">
+      <strong>Caution: 
+    </p> Fishing conditions can change rapidly, and the information provided may not always be current or accurate due to its community-sourced nature. </p> Always check local weather, tides, and regulations before fishing as they may change.</strong><br></p>For more info:
+      <ul>
+        <li><a href="https://apps.apple.com/nz/app/nz-fishing-rules/id456121901" target="_blank">NZ Fishing Rules App (iOS)</a></li>
+        <li><a href="https://play.google.com/store/apps/details?id=nz.govt.fish&pli=1" target="_blank">NZ Fishing Rules App (Android)</a></li>
+        <li><a href="https://www.mpi.govt.nz/fishing-aquaculture/recreational-fishing/fishing-rules/" target="_blank">Fishing Rules on MPI Website</a></li>
+      </ul>
+    </div>
+
+    <p class="developer">Developed by Hank. For any tips, suggestions, correction or adding new spots, please fill the below form or Contact: <a href="mailto:khandangithub@gmail.com">khandangithub@gmail.com</a></p>
+
+    <form id="submit-spot-form">
+      <h3>Submit a New Fishing Spot</h3>
+      <label for="spot-name">Spot Name:</label>
+      <input type="text" id="spot-name" required aria-label="Name of the fishing spot">
+      <label for="spot-coords">Coordinates (Lat, Lon):</label>
+      <input type="text" id="spot-coords" placeholder="e.g., -41.3477, 174.7419" required aria-label="Coordinates (latitude, longitude)">
+      <label for="spot-fish">Fish Types:</label>
+      <input type="text" id="spot-fish" placeholder="e.g., Kahawai, Snapper" required aria-label="Types of fish at the spot">
+      <label for="spot-tips">Tips:</label>
+      <textarea id="spot-tips" required aria-label="Fishing tips for the spot"></textarea>
+      <label for="spot-season">Best Season:</label>
+      <select id="spot-season" required aria-label="Best season for fishing at the spot">
+        <option value="All Year Round">All Year Round</option>
+        <option value="Spring to Summer">Spring to Summer</option>
+        <option value="Summer to Autumn">Summer to Autumn</option>
+        <option value="Autumn to Winter">Autumn to Winter</option>
+        <option value="Winter to Spring">Winter to Spring</option>
+      </select>
+      <button type="submit">Submit Spot</button>
+    </form>
+
+    <div id="disclaimer">
+      <strong>Disclaimer:</strong><br>
+      The information provided on this site is gathered from general knowledge, community contributions, and public resources for guideline purposes only. While we make every effort to ensure accuracy, we are not responsible for any errors, omissions, or consequences that may arise from the use of this information. 
+      Users are strongly advised to verify all fishing rules, safety precautions, and local regulations before engaging in any activities. Please check with relevant authorities for the most up-to-date and accurate information. 
+      Use of this site and its information is at your own risk.
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    const map = L.map('map', {
+      zoomControl: true,
+      scrollWheelZoom: true,
+      touchZoom: true,
+      doubleClickZoom: true
+    }).setView([-41.313, 174.77], 11);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Fish-to-URL mapping (using fishspecies.nz)
+    const fishLinks = {
+      "Kahawai": "https://www.seafood.co.nz/species/kahawai/",
+      "Snapper": "https://www.seafood.co.nz/species/snapper/",
+      "Gurnard": "https://www.fishing.net.nz/fishing-advice/fishing-hints-tips-and-how-to-articles/catching-gurnard-top-tips/",
+      "Blue Cod": "https://www.seafood.co.nz/species/blue-cod/",
+      "Red Cod": "https://www.seafood.co.nz/species/red-cod/",
+      "Spotty Sharks": "https://en.wikipedia.org/wiki/Spotted_estuary_smooth-hound",
+      "Banded wrasse (Kelpie)": "https://www.fishspecies.nz/search/",
+      "Elephant Fish": "https://www.seafood.co.nz/species/elephant-fish/",
+      "Trevally": "https://www.seafood.co.nz/species/trevally/",
+      "Tarakihi": "https://www.seafood.co.nz/species/tarakihi/",
+      "Kingfish": "https://www.seafood.co.nz/species/yellowtail-kingfish/",
+      "Moki": "https://www.seafood.co.nz/species/blue-moki/",
+      "Skate": "https://www.seafood.co.nz/species/rays-and-skates/"
+    };
+
+    // Function to generate hyperlinked fish names
+    function getLinkedFish(fishString) {
+      return fishString.split(',').map(fish => {
+        const trimmedFish = fish.trim();
+        const url = fishLinks[trimmedFish] || 'https://www.fishspecies.nz/search/';
+        return `<a href="${url}" target="_blank" rel="noopener">${trimmedFish}</a>`;
+      }).join(', ');
+    }
+
+    const spots = [
+      {
+        name: "Owhiro Bay",
+        coords: [-41.34777778, 174.7419444],
+        fish: "Kahawai, Snapper, Gurnard, Blue Cod, Red Cod, Spotty Sharks (Spotted smooth-hound), Banded wrasse (Kelpie), Elephant Fish",
+        tips: "Fish during rising tide, early morning, or change of light for best results. Park at the quarry car park, walk past the reserve, around the first point, past the first houses, and 200m further to a small sandy bay with a reef 80m out. Use 4-5oz breakaway, pulley rig, or ledger with pilchard, squid, or bonito bait, bound with bait elastic. Ideal in small or no swell with light northerly winds; strong northerlies are unpleasant. Use 30-40 kg terminal trace and circle hooks due to sharks. Note: Close to Taputeranga Marine Reserve; ensure you're outside restricted areas.",
+        season: "Autumn to Winter"
+      },
+      {
+        name: "Makara Beach",
+        coords: [-41.21972222, 174.7122222],
+        fish: "Snapper, Kahawai, Trevally, Tarakihi, Red Cod, Spotty Sharks, Kingfish, Blue Cod, Moki",
+        tips: "Best fished February–June during early morning or late evening on a rising tide. Use 10–12 ft surf rods, long-cast reels, 4/0–5/0 hooks, and firm bait like squid, pilchard, or shellfish (well-cottoned). Berley improves catch rates, especially for kahawai and kingfish. Good spots: Boom Rock (1.5h walk) for kingfish, rocks to the left of carpark, or right-side ledge at low tide for snapper. Use ledger rigs with crab or cray bait for spotty sharks. Kayak fishing and softbaits effective offshore. Fish are more active with light northerly or southerly winds under 10 knots.",
+        season: "Late Summer to Spring"
+      },
+      {
+        name: "Past Red Rocks",
+        coords: [-41.33805556, 174.6711111],
+        fish: "Blue Cod, Kahawai, Moki",
+        tips: "Fish past Devil’s Gate on the south coast for blue cod, kahawai, and moki. Wear warm clothing due to exposed conditions and avoid southerly winds, which bring high wind and grit. Access requires careful navigation over rugged terrain. Ensure fishing is outside the Taputeranga Marine Reserve boundaries.",
+        season: "Spring to Summer"
+      },
+      {
+        name: "Breaker Bay",
+        coords: [-41.3299, 174.8344],
+        fish: "Blue Cod, Tarakihi, Kahawai, Kingfish",
+        tips: "Target slack tide with fresh bait near rocky outcrops for blue cod and tarakihi. Beach fishing is effective in northerly winds, as the hill reduces wind impact. One angler reported 25-30lb kingfish catch on a hex wobbler, indicating potential for larger species. Soft baits work well, especially two hours before dusk.",
+        season: "Spring to Summer"
+      },
+      {
+        name: "Scorching Bay",
+        coords: [-41.2970, 174.8333],
+        fish: "Snapper, Trevally, Kahawai",
+        tips: "Fish near the rocks at dawn for snapper, trevally, and kahawai. This location benefits from its proximity to deeper waters near the harbour entrance.",
+        season: "All Year Round"
+      },
+      {
+        name: "Seatoun",
+        coords: [-41.3247, 174.8380],
+        fish: "Kahawai, Snapper, Skate",
+        tips: "Fish during incoming tide with pilchard bait for kahawai, snapper, and skate. Seatoun Wharf, near the harbour entrance, supports diverse species and has recently produced good snapper catches. The wharf’s deep waters make it a reliable spot year-round.",
+        season: "Spring to Summer"
+      },
+      {
+        name: "Muritai Beach",
+        coords: [-41.3011, 174.8886],
+        fish: "Trevally, Gurnard",
+        tips: "Fish near the rocks in the evening for trevally and gurnard. Limited specific details are available, but the beach is accessible for shore fishing, with a boat ramp nearby. Kina are present, suggesting potential for other species. Verify conditions due to limited data.",
+        season: "Summer to Autumn"
+      },
+      {
+        name: "Days Bay",
+        coords: [-41.2806, 174.9052],
+        fish: "Snapper, Kahawai",
+        tips: "Use soft baits during high tide for snapper and kahawai. Nearby Sunshine Bay is productive for snapper in spring/summer, and Rona Bay Wharf is a popular, less crowded fishing spot. The area’s sheltered bays enhance fishing opportunities.",
+        season: "All Year Round"
+      },
+      {
+        name: "Te Raekaihau Point",
+        coords: [-41.3426, 174.7917],
+        fish: "Kingfish, Snapper, Blue Cod",
+        tips: "Fish near rock pools early in the morning for kingfish, snapper, and blue cod. Specific details are limited, but the scenic coastal location suggests fishing potential. Ensure you’re outside the Taputeranga Marine Reserve boundaries. Verify conditions due to limited data.",
+        season: "Spring to Summer"
+      },
+      {
+        name: "Shelly Bay",
+        coords: [-41.2969, 174.8212],
+        fish: "Snapper, Trevally, Kahawai",
+        tips: "Fish from the wharf early in the morning for snapper, trevally, and kahawai. The wharf is a popular and accessible spot, benefiting from its position in Wellington Harbour. The northern end near Chocolate Fish Cafe is a snag-free spot ideal for kahawai, but avoid crowds by fishing early. Use standard bait or lures for consistent results.",
+        season: "All Year Round"
+      },
+      {
+        name: "Wairaka Rock (Pukerua Bay)",
+        coords: [-41.030530, 174.871348],
+        fish: "Snapper, Kahawai, Kingfish, Trevally",
+        tips: "Access via a path and fish near the rock outcrop. The area is rocky with foul ground, so use a minimum 30lb line and strayline or a 1/2 oz sinker. Big kingfish and snapper have been caught here, with abundant piper and pilchard for fresh bait. Kahawai and trevally are common; bring burley and sabiki flies. Avoid fishing if the swell exceeds 1.5 meters due to safety concerns.",
+        season: "Spring to Summer"
+      }
+    ];
+
+    function addMarker(spot) {
+      L.marker(spot.coords).addTo(map)
+        .bindPopup(`<strong>${spot.name}</strong><br><em>Fish:</em> ${getLinkedFish(spot.fish)}<br><em>Tips:</em> ${spot.tips}<br><em>Best Season:</em> ${spot.season}`);
+    }
+
+    spots.forEach(spot => addMarker(spot));
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    const filterSpots = debounce(function() {
+      const searchQuery = document.getElementById('search').value.toLowerCase();
+      const spotListDiv = document.getElementById('spotList');
+      spotListDiv.innerHTML = '';
+
+      if (searchQuery.length === 0) {
+        spotListDiv.style.display = 'none';
+        spotListDiv.setAttribute('aria-hidden', 'true');
+        return;
+      }
+
+      const filteredSpots = spots.filter(spot => spot.name.toLowerCase().includes(searchQuery));
+      filteredSpots.forEach(spot => {
+        const spotDiv = document.createElement('div');
+        spotDiv.classList.add('spot');
+        spotDiv.setAttribute('tabindex', '0');
+        spotDiv.setAttribute('role', 'button');
+        spotDiv.setAttribute('aria-label', `View details for ${spot.name}`);
+        spotDiv.innerHTML = `<div><strong>${spot.name}</strong><br><em>Fish:</em> ${getLinkedFish(spot.fish)}<br><em>Best Season:</em> ${spot.season}</div>`;
+        spotDiv.onclick = () => selectSpot(spot);
+        spotDiv.onkeydown = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectSpot(spot);
+          }
+        };
+        spotListDiv.appendChild(spotDiv);
+      });
+      spotListDiv.style.display = 'block';
+      spotListDiv.setAttribute('aria-hidden', 'false');
+    }, 300);
+
+    function selectSpot(spot) {
+      map.setView(spot.coords, 14);
+      L.popup()
+        .setLatLng(spot.coords)
+        .setContent(`
+          <strong>${spot.name}</strong><br>
+          <em>Fish:</em> ${getLinkedFish(spot.fish)}<br>
+          <em>Tips:</em> ${spot.tips}<br>
+          <em>Best Season:</em> ${spot.season}
+        `)
+        .openOn(map);
+      document.getElementById('spotList').style.display = 'none';
+      document.getElementById('spotList').setAttribute('aria-hidden', 'true');
+    }
+
+    const reserveCoords = [
+      [-41.3435, 174.7445],
+      [-41.3666, 174.7445],
+      [-41.3666, 174.7895],
+      [-41.3425, 174.7895]
+    ];
+    const reserve = L.polygon(reserveCoords, {
+      color: 'red',
+      weight: 2,
+      fillOpacity: 0.3
+    }).addTo(map);
+    reserve.bindPopup('Marine Reserve - No fishing allowed here.');
+
+    const wellingtonBounds = L.latLngBounds(
+      [-41.392729, 174.458771],
+      [-41.101102, 175.363523]
+    );
+    map.fitBounds(wellingtonBounds);
+
+    document.getElementById('search').addEventListener('input', filterSpots);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('submit-spot-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('spot-name').value;
+        const coords = document.getElementById('spot-coords').value;
+        const fish = document.getElementById('spot-fish').value;
+        const tips = document.getElementById('spot-tips').value;
+        const season = document.getElementById('spot-season').value;
+
+        const emailBody = `
+          New Fishing Spot Submission:
+          Name: ${name}
+          Coordinates: ${coords}
+          Fish: ${fish}
+          Tips: ${tips}
+          Best Season: ${season}
+        `.replace(/\n\s+/g, '\n');
+
+        const mailtoLink = `mailto:khandangithub@gmail.com?subject=New Fishing Spot Submission&body=${encodeURIComponent(emailBody)}`;
+        window.location.href = mailtoLink;
+
+        document.getElementById('submit-spot-form').reset();
+      });
+    });
+  </script>
+</body>
+</html>
