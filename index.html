@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Fishing Spots in Wellington</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <style>
     body {
@@ -70,7 +71,7 @@
       cursor: pointer;
       font-size: clamp(0.85em, 2.5vw, 0.9em);
       line-height: 1.4;
-      min-height: 44px; /* Minimum touch target size */
+      min-height: 44px;
     }
 
     .spot:last-child {
@@ -86,6 +87,50 @@
       flex: 1;
       min-height: 50vh;
       margin-top: 10px;
+      position: relative;
+    }
+
+    #tide-info {
+      position: absolute;
+      top: 60px;
+      right: 10px;
+      z-index: 1002;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: clamp(0.8em, 2.5vw, 0.9em);
+      display: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      max-width: 200px;
+    }
+
+    #tide-info .credit {
+      margin-top: 8px;
+      font-size: clamp(0.7em, 2vw, 0.75em);
+      color: #555;
+    }
+
+    #tide-toggle {
+      position: absolute;
+      z-index: 1001;
+      background-color: #FFDD00;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      padding: 8px;
+      cursor: pointer;
+      font-size: clamp(0.85em, 2.5vw, 0.9em);
+      min-height: 44px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      top: 10px;
+      right: 10px;
+    }
+
+    #tide-toggle:hover {
+      background-color: #e6c700;
     }
 
     footer {
@@ -117,7 +162,7 @@
     }
 
     footer a {
-      color: #0055aa; /* Improved contrast */
+      color: #0055aa;
       text-decoration: underline;
     }
 
@@ -174,6 +219,42 @@
       background-color: #e6c700;
     }
 
+    #back-to-top {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #FFDD00;
+      color: #000;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.2em;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    #back-to-top:hover {
+      background-color: #e6c700;
+    }
+
+    #confirmation-message {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1002;
+      font-size: clamp(0.85em, 2.5vw, 0.9em);
+      display: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
     /* Tablet and small desktop */
     @media (max-width: 768px) {
       #map {
@@ -196,6 +277,10 @@
       }
       #submit-spot-form button {
         font-size: 0.9em;
+      }
+      #tide-toggle {
+        font-size: 0.9em;
+        padding: 6px;
       }
     }
 
@@ -236,6 +321,16 @@
       #submit-spot-form button {
         font-size: 0.85em;
       }
+      #tide-toggle {
+        font-size: 0.85em;
+        padding: 5px;
+      }
+      #confirmation-message {
+        top: 10px;
+        right: 10px;
+        padding: 8px 15px;
+        font-size: 0.85em;
+      }
     }
   </style>
 </head>
@@ -256,12 +351,21 @@
     <div id="spotList" role="dialog" aria-label="Search results"></div>
   </div>
 
-  <div id="map" role="region" aria-label="Map of fishing spots in Wellington"></div>
+  <div id="map" role="region" aria-label="Map of fishing spots in Wellington">
+    <button id="tide-toggle" aria-label="Toggle tide information">Today's Tide</button>
+    <div id="tide-info">
+      <strong id="tide-title">Tides at Selected Location:</strong><br>
+      <span id="tide-data">Click map to load tide data...</span>
+      <div class="credit">
+        Tide data provided by <a href="https://tides.niwa.co.nz/" target="_blank" aria-label="Visit NIWA Tide Forecaster website">NIWA’s Tide Forecaster</a>
+      </div>
+    </div>
+  </div>
 
   <footer>
     <div id="caution">
       <strong>Caution: 
-    </p> Fishing conditions can change rapidly, and the information provided may not always be current or accurate due to its community-sourced nature. </p> Always check local weather, tides, and regulations before fishing as they may change.</strong><br></p>For more info:
+      </p> Fishing conditions can change rapidly, and the information provided may not always be current or accurate due to its community-sourced nature. </p> Always check local weather, tides, and regulations before fishing as they may change.</strong><br></p>For more info:
       <ul>
         <li><a href="https://apps.apple.com/nz/app/nz-fishing-rules/id456121901" target="_blank">NZ Fishing Rules App (iOS)</a></li>
         <li><a href="https://play.google.com/store/apps/details?id=nz.govt.fish&pli=1" target="_blank">NZ Fishing Rules App (Android)</a></li>
@@ -300,6 +404,9 @@
     </div>
   </footer>
 
+  <button id="back-to-top" aria-label="Back to top">↑</button>
+  <div id="confirmation-message">Submission sent! Check your email client.</div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
     const map = L.map('map', {
@@ -314,7 +421,7 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Fish-to-URL mapping (using fishspecies.nz)
+    // Fish-to-URL mapping
     const fishLinks = {
       "Kahawai": "https://www.seafood.co.nz/species/kahawai/",
       "Snapper": "https://www.seafood.co.nz/species/snapper/",
@@ -328,7 +435,9 @@
       "Tarakihi": "https://www.seafood.co.nz/species/tarakihi/",
       "Kingfish": "https://www.seafood.co.nz/species/yellowtail-kingfish/",
       "Moki": "https://www.seafood.co.nz/species/blue-moki/",
-      "Skate": "https://www.seafood.co.nz/species/rays-and-skates/"
+      "Skate": "https://www.seafood.co.nz/species/rays-and-skates/",
+      "Blue Moki": "https://www.seafood.co.nz/species/blue-moki/",
+      "Butterfish": "https://www.fishspecies.nz/search/"
     };
 
     // Function to generate hyperlinked fish names
@@ -342,46 +451,78 @@
 
     const spots = [
       {
-        name: "Owhiro Bay",
-        coords: [-41.34777778, 174.7419444],
-        fish: "Kahawai, Snapper, Gurnard, Blue Cod, Red Cod, Spotty Sharks (Spotted smooth-hound), Banded wrasse (Kelpie), Elephant Fish",
+        name: "Owhiro Bay", 
+
+        coords: [-41.359347, 174.720130],
+        fish: "Kahawai, Snapper, Gurnard, Blue Cod, Red Cod, Spotty Sharks, Banded wrasse (Kelpie), Elephant Fish",
         tips: "Fish during rising tide, early morning, or change of light for best results. Park at the quarry car park, walk past the reserve, around the first point, past the first houses, and 200m further to a small sandy bay with a reef 80m out. Use 4-5oz breakaway, pulley rig, or ledger with pilchard, squid, or bonito bait, bound with bait elastic. Ideal in small or no swell with light northerly winds; strong northerlies are unpleasant. Use 30-40 kg terminal trace and circle hooks due to sharks. Note: Close to Taputeranga Marine Reserve; ensure you're outside restricted areas.",
         season: "Autumn to Winter"
       },
       {
         name: "Makara Beach",
         coords: [-41.21972222, 174.7122222],
-        fish: "Snapper, Kahawai, Trevally, Tarakihi, Red Cod, Spotty Sharks, Kingfish, Blue Cod, Moki",
-        tips: "Best fished February–June during early morning or late evening on a rising tide. Use 10–12 ft surf rods, long-cast reels, 4/0–5/0 hooks, and firm bait like squid, pilchard, or shellfish (well-cottoned). Berley improves catch rates, especially for kahawai and kingfish. Good spots: Boom Rock (1.5h walk) for kingfish, rocks to the left of carpark, or right-side ledge at low tide for snapper. Use ledger rigs with crab or cray bait for spotty sharks. Kayak fishing and softbaits effective offshore. Fish are more active with light northerly or southerly winds under 10 knots.",
+        fish: "Blue Cod, Tarakihi, Snapper, Kahawai, Trevally, Red Cod, Spotty Sharks, Kingfish, Moki",
+        tips: "Best fished February–June during early morning or late evening on a rising tide. Use 10–12 ft surf rods, long-cast reels, 4/0–5/0 hooks, and firm bait like squid, pilchard, or shellfish. Berley improves catch rates, especially for kahawai and kingfish. Fish from the rocky shoreline or right-side ledge at low tide for snapper. Use ledger rigs with crab or cray bait for spotty sharks. Kayak fishing and softbaits effective offshore. Check weather, as strong winds can make fishing difficult.",
         season: "Late Summer to Spring"
       },
       {
-        name: "Past Red Rocks",
-        coords: [-41.33805556, 174.6711111],
-        fish: "Blue Cod, Kahawai, Moki",
-        tips: "Fish past Devil’s Gate on the south coast for blue cod, kahawai, and moki. Wear warm clothing due to exposed conditions and avoid southerly winds, which bring high wind and grit. Access requires careful navigation over rugged terrain. Ensure fishing is outside the Taputeranga Marine Reserve boundaries.",
+        name: "Red Rocks",
+
+        coords: [-41.341040, 174.677150],
+        fish: "Blue Moki, Butterfish, Blue Cod, Kahawai, Moki",
+        tips: "Accessible via a coastal walk past Devil’s Gate, this area is ideal for blue moki in winter and butterfish. Fish during incoming tides with pilchards or squid bait. Wear warm clothing due to exposed conditions and avoid southerly winds. Use stronger tackle due to rocky terrain. Ensure fishing is outside Taputeranga Marine Reserve boundaries.",
         season: "Spring to Summer"
+      },
+      {
+        name: "Lyall Bay",
+        coords: [-41.335447, 174.803694],
+        fish: "Kahawai, Gurnard",
+        tips: "Popular among surfcasters, Lyall Bay is ideal for catching kahawai and gurnard. Fish during incoming tides with pilchards or squid bait for best results. Due to rocky terrain, use stronger tackle to prevent line breakage. Check weather forecasts, as the South Coast can be exposed to strong winds.",
+        season: "Summer"
       },
       {
         name: "Breaker Bay",
         coords: [-41.3299, 174.8344],
         fish: "Blue Cod, Tarakihi, Kahawai, Kingfish",
-        tips: "Target slack tide with fresh bait near rocky outcrops for blue cod and tarakihi. Beach fishing is effective in northerly winds, as the hill reduces wind impact. One angler reported 25-30lb kingfish catch on a hex wobbler, indicating potential for larger species. Soft baits work well, especially two hours before dusk.",
+        tips: "Target slack tide with fresh bait near rocky outcrops for blue cod and tarakihi. Beach fishing is effective in northerly winds, as the hill reduces wind impact. Soft baits work well two hours before dusk. Kingfish up to 25-30lb have been caught on hex wobblers.",
         season: "Spring to Summer"
       },
       {
         name: "Scorching Bay",
         coords: [-41.2970, 174.8333],
         fish: "Snapper, Trevally, Kahawai",
-        tips: "Fish near the rocks at dawn for snapper, trevally, and kahawai. This location benefits from its proximity to deeper waters near the harbour entrance.",
+        tips: "Fish near the rocks at dawn for snapper, trevally, and kahawai. Use pilchards or squid bait during incoming tides. Benefits from proximity to deeper waters near the harbour entrance, making it productive year-round.",
         season: "All Year Round"
       },
       {
         name: "Seatoun",
         coords: [-41.3247, 174.8380],
         fish: "Kahawai, Snapper, Skate",
-        tips: "Fish during incoming tide with pilchard bait for kahawai, snapper, and skate. Seatoun Wharf, near the harbour entrance, supports diverse species and has recently produced good snapper catches. The wharf’s deep waters make it a reliable spot year-round.",
+        tips: "Fish during incoming tide with pilchard bait from Seatoun Wharf for kahawai, snapper, and skate. The wharf’s deep waters near the harbour entrance make it reliable year-round. Recent reports confirm good snapper catches.",
         season: "Spring to Summer"
+      },
+      {
+        name: "Oriental Bay",
+        coords: [-41.2910, 174.7940],
+        fish: "Kahawai, Snapper, Trevally",
+        tips: "A favorite for shore fishing, Oriental Bay’s wharves and jetties offer easy access. Fish during incoming tides with pilchards or squid bait for kahawai, snapper, and trevally. Best from late spring to early autumn. Popular spot, so arrive early to avoid crowds.",
+        season: "Summer to Autumn"
+      },
+      {
+        name: "Evans Bay",
+        coords: [-41.300383, 174.805366], 
+
+        fish: "Gurnard, Tarakihi, Kahawai",
+        tips: "Known for calm waters near the airport, Evans Bay is ideal for gurnard and tarakihi. Fish during incoming tides in deeper parts with pilchards or squid bait. Best in warmer months. Suitable for shore fishing with light tackle.",
+        season: "Summer to Autumn"
+      },
+      {
+        name: "Petone Wharf",
+        coords: [-41.229998, 174.869941], 
+
+        fish: "Kahawai, Snapper, Kingfish",
+        tips: "This historic wharf offers ample space for anglers. Fish during incoming tides with pilchards or squid bait for kahawai, snapper, and occasional kingfish. Best from late spring to early autumn. Use stronger tackle in deeper waters for kingfish.",
+        season: "Summer to Autumn"
       },
       {
         name: "Muritai Beach",
@@ -394,21 +535,21 @@
         name: "Days Bay",
         coords: [-41.2806, 174.9052],
         fish: "Snapper, Kahawai",
-        tips: "Use soft baits during high tide for snapper and kahawai. Nearby Sunshine Bay is productive for snapper in spring/summer, and Rona Bay Wharf is a popular, less crowded fishing spot. The area’s sheltered bays enhance fishing opportunities.",
+        tips: "Use soft baits during high tide for snapper and kahawai. Nearby Sunshine Bay is productive in spring/summer, and Rona Bay Wharf is a less crowded spot. Sheltered bays enhance fishing opportunities year-round.",
         season: "All Year Round"
       },
       {
         name: "Te Raekaihau Point",
         coords: [-41.3426, 174.7917],
         fish: "Kingfish, Snapper, Blue Cod",
-        tips: "Fish near rock pools early in the morning for kingfish, snapper, and blue cod. Specific details are limited, but the scenic coastal location suggests fishing potential. Ensure you’re outside the Taputeranga Marine Reserve boundaries. Verify conditions due to limited data.",
+        tips: "Fish near rock pools early in the morning for kingfish, snapper, and blue cod. Use pilchards or squid bait during incoming tides. Ensure you’re outside Taputeranga Marine Reserve boundaries. Check weather due to exposed conditions.",
         season: "Spring to Summer"
       },
       {
         name: "Shelly Bay",
         coords: [-41.2969, 174.8212],
         fish: "Snapper, Trevally, Kahawai",
-        tips: "Fish from the wharf early in the morning for snapper, trevally, and kahawai. The wharf is a popular and accessible spot, benefiting from its position in Wellington Harbour. The northern end near Chocolate Fish Cafe is a snag-free spot ideal for kahawai, but avoid crowds by fishing early. Use standard bait or lures for consistent results.",
+        tips: "Fish from the wharf early in the morning with pilchards or squid bait for snapper, trevally, and kahawai. The northern end near Chocolate Fish Cafe is snag-free and ideal for kahawai. Avoid crowds by fishing early. Reliable year-round.",
         season: "All Year Round"
       },
       {
@@ -507,8 +648,93 @@
 
     document.getElementById('search').addEventListener('input', filterSpots);
 
+    // Back-to-top button functionality
+    const backToTopButton = document.getElementById('back-to-top');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 200) {
+        backToTopButton.style.display = 'block';
+      } else {
+        backToTopButton.style.display = 'none';
+      }
+    });
+    backToTopButton.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // T
+    function fetchTideData(lat, long) {
+      const tideDataSpan = document.getElementById('tide-data');
+      const tideTitle = document.getElementById('tide-title');
+      const url = `https://api.niwa.co.nz/tides/data?lat=${lat}&long=${long}&numberOfDays=1&startDate=2025-04-24`;
+      const encodedApiKey = 'ZzZ3UGFMVUFQYXM4WUh4TlE0Tk9YVVNFd3Vsd05OcXk=';
+      const apiKey = atob(encodedApiKey);
+
+      tideTitle.innerHTML = `Tides at ${lat.toFixed(4)}, ${long.toFixed(4)}:`;
+      tideDataSpan.innerHTML = 'Loading tide data...';
+
+      fetch(url, {
+        headers: {
+          'x-apikey': apiKey
+        }
+      })
+        .then(response => {
+          if (response.status === 401) {
+            console.error('Tide API: Invalid API key');
+            tideDataSpan.innerHTML = 'Invalid tide API key. Please check your API key configuration.';
+            return null;
+          }
+          if (response.status === 429) {
+            console.error('Tide API: Rate limit exceeded');
+            tideDataSpan.innerHTML = 'Tide API rate limit exceeded. Try again later.';
+            return null;
+          }
+          if (!response.ok) {
+            console.error(`Tide API error: ${response.status}`);
+            tideDataSpan.innerHTML = 'Tide data unavailable for this location. Try a coastal area.';
+            return null;
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (!data || !data.values) {
+            console.error('Tide API: No tide data returned');
+            tideDataSpan.innerHTML = 'No tide data available. Try a coastal area.';
+            return;
+          }
+          const tides = data.values.slice(0, 4).map(tide => {
+            const time = new Date(tide.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return `Height: ${tide.value.toFixed(2)}m at ${time}`;
+          }).join('<br>');
+          tideDataSpan.innerHTML = tides || 'No tide data for today';
+        })
+        .catch(error => {
+          console.error('Tide API fetch error:', error);
+          tideDataSpan.innerHTML = 'Tide data unavailable. Try again.';
+        });
+    }
+
+    // Map click event to fetch tide data for clicked location
+    map.on('click', function(e) {
+      const lat = e.latlng.lat;
+      const long = e.latlng.lng;
+      const tideInfo = document.getElementById('tide-info');
+      tideInfo.style.display = 'block';
+      fetchTideData(lat, long);
+    });
+
+    // Toggle button to show/hide tide info
+    document.getElementById('tide-toggle').addEventListener('click', () => {
+      const tideInfo = document.getElementById('tide-info');
+      const isHidden = tideInfo.style.display === 'none' || tideInfo.style.display === '';
+      tideInfo.style.display = isHidden ? 'block' : 'none';
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('submit-spot-form').addEventListener('submit', (e) => {
+      // Form submission confirmation
+      const form = document.getElementById('submit-spot-form');
+      const confirmationMessage = document.getElementById('confirmation-message');
+
+      form.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('spot-name').value;
         const coords = document.getElementById('spot-coords').value;
@@ -528,7 +754,13 @@
         const mailtoLink = `mailto:khandangithub@gmail.com?subject=New Fishing Spot Submission&body=${encodeURIComponent(emailBody)}`;
         window.location.href = mailtoLink;
 
-        document.getElementById('submit-spot-form').reset();
+        // Show confirmation message
+        confirmationMessage.style.display = 'block';
+        setTimeout(() => {
+          confirmationMessage.style.display = 'none';
+        }, 3000);
+
+        form.reset();
       });
     });
   </script>
