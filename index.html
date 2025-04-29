@@ -193,7 +193,7 @@
       font-size: clamp(0.75em, 2.5vw, 0.8em);
     }
 
-    #cautio
+    #caution {
       background: #fff8c4;
       padding: 8px;
       border-left: 5px solid #f1c40f;
@@ -590,7 +590,7 @@
         name: "Muritai Beach",
         coords: [-41.3011, 174.8886],
         fish: "Trevally, Gurnard",
-        tips: "Fish near the rocks in the evening for trevally and gurnard. Limited specific details are available, but the beach is accessible for shore fishing, with a boat ramp nearby. Kina are present, suggesting potential for other species. Verify conditions due to limited data.",
+        tips: "Fish near the rocks in the evening for trevally and gurnard. Limited specific details are available, but the fish is accessible for shore fishing, with a boat ramp nearby. Kina are present, suggesting potential for other species. Verify conditions due to limited data.",
         season: "Summer to Autumn"
       },
       {
@@ -839,11 +839,17 @@
       legend.onAdd = function () {
         const div = L.DomUtil.create('div', 'leaflet-control-legend');
         div.innerHTML = `<strong>${species} Annual Distribution</strong><br>`;
+        const typeLabels = {
+          '1': 'Hot Spot',
+          '2': 'Normal Range (90%)',
+          '3': 'Full Range (100%)',
+          '4': 'Known Not to Exist'
+        };
         Object.keys(distributionColors).forEach(type => {
           div.innerHTML += `
             <div class="legend-item">
               <div class="legend-color" style="background-color: ${distributionColors[type]};"></div>
-              <span>Type ${type}</span>
+              <span>${typeLabels[type] || `Type ${type}`}</span>
             </div>
           `;
         });
@@ -934,7 +940,7 @@
     }
 
     // Snapper distribution layer
-    let isSnapperEnabled = true;
+    let isSnapperEnabled = false;
     let snapperLayer;
     const snapperUniqueDistTypes = new Set();
 
@@ -976,7 +982,7 @@
     );
 
     // Kingfish distribution layer
-    let isKingfishEnabled = true;
+    let isKingfishEnabled = false;
     let kingfishLayer;
     const kingfishUniqueDistTypes = new Set();
 
@@ -1018,7 +1024,7 @@
     );
 
     // Kahawai distribution layer
-    let isKahawaiEnabled = true;
+    let isKahawaiEnabled = false;
     let kahawaiLayer;
     const kahawaiUniqueDistTypes = new Set();
 
@@ -1060,7 +1066,7 @@
     );
 
     // Red Cod distribution layer
-    let isRedCodEnabled = true;
+    let isRedCodEnabled = false;
     let redCodLayer;
     const redCodUniqueDistTypes = new Set();
 
