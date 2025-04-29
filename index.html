@@ -133,6 +133,15 @@
       background-color: #e6c700;
     }
 
+    #tide-toggle.off {
+      background-color: #ccc;
+      color: #333;
+    }
+
+    #tide-toggle.off:hover {
+      background-color: #b3b3b3;
+    }
+
     footer {
       background: #f4f4f4;
       padding: 1em;
@@ -352,7 +361,7 @@
   </div>
 
   <div id="map" role="region" aria-label="Map of fishing spots in Wellington">
-    <button id="tide-toggle" aria-label="Toggle tide information">Tap anywhere for today’s tide</button>
+    <button id="tide-toggle" aria-label="Toggle tide information">Tide Info On</button>
     <div id="tide-info">
       <strong id="tide-title">Tides at Selected Location:</strong><br>
       <span id="tide-data">Click map to load tide data...</span>
@@ -452,7 +461,6 @@
     const spots = [
       {
         name: "Owhiro Bay", 
-
         coords: [-41.359347, 174.720130],
         fish: "Kahawai, Snapper, Gurnard, Blue Cod, Red Cod, Spotty Sharks, Banded wrasse (Kelpie), Elephant Fish",
         tips: "Fish during rising tide, early morning, or change of light for best results. Park at the quarry car park, walk past the reserve, around the first point, past the first houses, and 200m further to a small sandy bay with a reef 80m out. Use 4-5oz breakaway, pulley rig, or ledger with pilchard, squid, or bonito bait, bound with bait elastic. Ideal in small or no swell with light northerly winds; strong northerlies are unpleasant. Use 30-40 kg terminal trace and circle hooks due to sharks. Note: Close to Taputeranga Marine Reserve; ensure you're outside restricted areas.",
@@ -467,7 +475,6 @@
       },
       {
         name: "Red Rocks",
-
         coords: [-41.341040, 174.677150],
         fish: "Blue Moki, Butterfish, Blue Cod, Kahawai, Moki",
         tips: "Accessible via a coastal walk past Devil’s Gate, this area is ideal for blue moki in winter and butterfish. Fish during incoming tides with pilchards or squid bait. Wear warm clothing due to exposed conditions and avoid southerly winds. Use stronger tackle due to rocky terrain. Ensure fishing is outside Taputeranga Marine Reserve boundaries.",
@@ -511,7 +518,6 @@
       {
         name: "Evans Bay",
         coords: [-41.300383, 174.805366], 
-
         fish: "Gurnard, Tarakihi, Kahawai",
         tips: "Known for calm waters near the airport, Evans Bay is ideal for gurnard and tarakihi. Fish during incoming tides in deeper parts with pilchards or squid bait. Best in warmer months. Suitable for shore fishing with light tackle.",
         season: "Summer to Autumn"
@@ -519,7 +525,6 @@
       {
         name: "Petone Wharf",
         coords: [-41.229998, 174.869941], 
-
         fish: "Kahawai, Snapper, Kingfish",
         tips: "This historic wharf offers ample space for anglers. Fish during incoming tides with pilchards or squid bait for kahawai, snapper, and occasional kingfish. Best from late spring to early autumn. Use stronger tackle in deeper waters for kingfish.",
         season: "Summer to Autumn"
@@ -661,7 +666,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    // T
+    // Tide data fetch function
     function fetchTideData(lat, long) {
       const tideDataSpan = document.getElementById('tide-data');
       const tideTitle = document.getElementById('tide-title');
@@ -713,20 +718,40 @@
         });
     }
 
-    // Map click event to fetch tide data for clicked location
-    map.on('click', function(e) {
-      const lat = e.latlng.lat;
-      const long = e.latlng.lng;
-      const tideInfo = document.getElementById('tide-info');
-      tideInfo.style.display = 'block';
-      fetchTideData(lat, long);
+    // Tide toggle functionality
+    let isTideEnabled = true; // Default state is enabled
+    const tideToggleButton = document.getElementById('tide-toggle');
+    const tideInfo = document.getElementById('tide-info');
+
+    function updateToggleButton() {
+      if (isTideEnabled) {
+        tideToggleButton.textContent = 'Tide Info On';
+        tideToggleButton.classList.remove('off');
+        tideToggleButton.setAttribute('aria-label', 'Turn tide information off');
+      } else {
+        tideToggleButton.textContent = 'Tide Info Off';
+        tideToggleButton.classList.add('off');
+        tideToggleButton.setAttribute('aria-label', 'Turn tide information on');
+        tideInfo.style.display = 'none'; // Hide tide info when disabled
+      }
+    }
+
+    tideToggleButton.addEventListener('click', () => {
+      isTideEnabled = !isTideEnabled;
+      updateToggleButton();
     });
 
-    // Toggle button to show/hide tide info
-    document.getElementById('tide-toggle').addEventListener('click', () => {
-      const tideInfo = document.getElementById('tide-info');
-      const isHidden = tideInfo.style.display === 'none' || tideInfo.style.display === '';
-      tideInfo.style.display = isHidden ? 'block' : 'none';
+    // Initialize button state
+    updateToggleButton();
+
+    // Map click event to fetch tide data only when tide is enabled
+    map.on('click', function(e) {
+      if (isTideEnabled) {
+        const lat = e.latlng.lat;
+        const long = e.latlng.lng;
+        tideInfo.style.display = 'block';
+        fetchTideData(lat, long);
+      }
     });
 
     document.addEventListener('DOMContentLoaded', () => {
