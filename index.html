@@ -590,7 +590,7 @@
         name: "Muritai Beach",
         coords: [-41.3011, 174.8886],
         fish: "Trevally, Gurnard",
-        tips: "Fish near the rocks in the evening for trevally and gurnard. Limited specific details are available, but the fish is accessible for shore fishing, with a boat ramp nearby. Kina are present, suggesting potential for other species. Verify conditions due to limited data.",
+        tips: "Fish near the rocks in the evening for trevally and gurnard. Limited specific details are available, but the beach is accessible for shore fishing, with a boat ramp nearby. Kina are present, suggesting potential for other species. Verify conditions due to limited data.",
         season: "Summer to Autumn"
       },
       {
@@ -776,7 +776,7 @@
     }
 
     // Tide toggle functionality
-    let isTideEnabled = false;
+    let isTideEnabled = true;
     const tideToggleButton = document.getElementById('tide-toggle');
     const tideInfo = document.getElementById('tide-info');
 
@@ -960,9 +960,23 @@
         }
         if (props) {
           let popupContent = '<strong>Snapper Annual Distribution</strong><br>';
-          for (let prop in props) {
-            popupContent += `${prop}: ${props[prop]}<br>`;
-          }
+          const desiredProps = [
+            'PortalUrl',
+            'ObjectReferences',
+            'SpeciesDepthMaximum',
+            'ScientificContact',
+            'SpeciesScientificName',
+            'SpeciesMaoriName',
+            'TemporalExtent',
+            'SpeciesDepthMinimum',
+            'SpeciesGroup',
+            'HabitatType'
+          ];
+          desiredProps.forEach(prop => {
+            if (props[prop] !== undefined && props[prop] !== null) {
+              popupContent += `${prop}: ${props[prop]}<br>`;
+            }
+          });
           layer.bindPopup(popupContent);
         }
       }
@@ -1002,9 +1016,23 @@
         }
         if (props) {
           let popupContent = '<strong>Kingfish Annual Distribution</strong><br>';
-          for (let prop in props) {
-            popupContent += `${prop}: ${props[prop]}<br>`;
-          }
+          const desiredProps = [
+            'PortalUrl',
+            'ObjectReferences',
+            'SpeciesDepthMaximum',
+            'ScientificContact',
+            'SpeciesScientificName',
+            'SpeciesMaoriName',
+            'TemporalExtent',
+            'SpeciesDepthMinimum',
+            'SpeciesGroup',
+            'HabitatType'
+          ];
+          desiredProps.forEach(prop => {
+            if (props[prop] !== undefined && props[prop] !== null) {
+              popupContent += `${prop}: ${props[prop]}<br>`;
+            }
+          });
           layer.bindPopup(popupContent);
         }
       }
@@ -1044,9 +1072,23 @@
         }
         if (props) {
           let popupContent = '<strong>Kahawai Annual Distribution</strong><br>';
-          for (let prop in props) {
-            popupContent += `${prop}: ${props[prop]}<br>`;
-          }
+          const desiredProps = [
+            'PortalUrl',
+            'ObjectReferences',
+            'SpeciesDepthMaximum',
+            'ScientificContact',
+            'SpeciesScientificName',
+            'SpeciesMaoriName',
+            'TemporalExtent',
+            'SpeciesDepthMinimum',
+            'SpeciesGroup',
+            'HabitatType'
+          ];
+          desiredProps.forEach(prop => {
+            if (props[prop] !== undefined && props[prop] !== null) {
+              popupContent += `${prop}: ${props[prop]}<br>`;
+            }
+          });
           layer.bindPopup(popupContent);
         }
       }
@@ -1086,9 +1128,23 @@
         }
         if (props) {
           let popupContent = '<strong>Red Cod Annual Distribution</strong><br>';
-          for (let prop in props) {
-            popupContent += `${prop}: ${props[prop]}<br>`;
-          }
+          const desiredProps = [
+            'PortalUrl',
+            'ObjectReferences',
+            'SpeciesDepthMaximum',
+            'ScientificContact',
+            'SpeciesScientificName',
+            'SpeciesMaoriName',
+            'TemporalExtent',
+            'SpeciesDepthMinimum',
+            'SpeciesGroup',
+            'HabitatType'
+          ];
+          desiredProps.forEach(prop => {
+            if (props[prop] !== undefined && props[prop] !== null) {
+              popupContent += `${prop}: ${props[prop]}<br>`;
+            }
+          });
           layer.bindPopup(popupContent);
         }
       }
