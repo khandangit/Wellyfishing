@@ -111,7 +111,7 @@
       color: #555;
     }
 
-    #tide-toggle {
+    #tide-toggle, #snapper-toggle, #kingfish-toggle, #kahawai-toggle, #redcod-toggle {
       position: absolute;
       z-index: 1001;
       background-color: #FFDD00;
@@ -125,21 +125,66 @@
       line-height: 1;
       display: flex;
       align-items: center;
+    }
+
+    #tide-toggle {
       top: 10px;
       right: 10px;
     }
 
-    #tide-toggle:hover {
+    #snapper-toggle {
+      top: 60px;
+      right: 10px;
+    }
+
+    #kingfish-toggle {
+      top: 110px;
+      right: 10px;
+    }
+
+    #kahawai-toggle {
+      top: 160px;
+      right: 10px;
+    }
+
+    #redcod-toggle {
+      top: 210px;
+      right: 10px;
+    }
+
+    #tide-toggle:hover, #snapper-toggle:hover, #kingfish-toggle:hover, #kahawai-toggle:hover, #redcod-toggle:hover {
       background-color: #e6c700;
     }
 
-    #tide-toggle.off {
+    #tide-toggle.off, #snapper-toggle.off, #kingfish-toggle.off, #kahawai-toggle.off, #redcod-toggle.off {
       background-color: #ccc;
       color: #333;
     }
 
-    #tide-toggle.off:hover {
+    #tide-toggle.off:hover, #snapper-toggle.off:hover, #kingfish-toggle.off:hover, #kahawai-toggle.off:hover, #redcod-toggle.off:hover {
       background-color: #b3b3b3;
+    }
+
+    .leaflet-control-legend {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      font-size: clamp(0.8em, 2.5vw, 0.9em);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      border: 1px solid #333;
     }
 
     footer {
@@ -148,7 +193,7 @@
       font-size: clamp(0.75em, 2.5vw, 0.8em);
     }
 
-    #caution {
+    #cautio
       background: #fff8c4;
       padding: 8px;
       border-left: 5px solid #f1c40f;
@@ -287,9 +332,13 @@
       #submit-spot-form button {
         font-size: 0.9em;
       }
-      #tide-toggle {
+      #tide-toggle, #snapper-toggle, #kingfish-toggle, #kahawai-toggle, #redcod-toggle {
         font-size: 0.9em;
         padding: 6px;
+      }
+      .leaflet-control-legend {
+        font-size: 0.9em;
+        padding: 8px;
       }
     }
 
@@ -330,7 +379,7 @@
       #submit-spot-form button {
         font-size: 0.85em;
       }
-      #tide-toggle {
+      #tide-toggle, #snapper-toggle, #kingfish-toggle, #kahawai-toggle, #redcod-toggle {
         font-size: 0.85em;
         padding: 5px;
       }
@@ -339,6 +388,10 @@
         right: 10px;
         padding: 8px 15px;
         font-size: 0.85em;
+      }
+      .leaflet-control-legend {
+        font-size: 0.85em;
+        padding: 6px;
       }
     }
   </style>
@@ -361,7 +414,11 @@
   </div>
 
   <div id="map" role="region" aria-label="Map of fishing spots in Wellington">
-    <button id="tide-toggle" aria-label="Toggle tide information">Tide Info On</button>
+    <button id="tide-toggle" aria-label="Turn tide information off">Tide Info On</button>
+    <button id="snapper-toggle" aria-label="Turn Snapper distribution off">Snapper Dist On</button>
+    <button id="kingfish-toggle" aria-label="Turn Kingfish distribution off">Kingfish Dist On</button>
+    <button id="kahawai-toggle" aria-label="Turn Kahawai distribution off">Kahawai Dist On</button>
+    <button id="redcod-toggle" aria-label="Turn Red Cod distribution off">Red Cod Dist On</button>
     <div id="tide-info">
       <strong id="tide-title">Tides at Selected Location:</strong><br>
       <span id="tide-data">Click map to load tide data...</span>
@@ -719,11 +776,11 @@
     }
 
     // Tide toggle functionality
-    let isTideEnabled = true; // Default state is enabled
+    let isTideEnabled = true;
     const tideToggleButton = document.getElementById('tide-toggle');
     const tideInfo = document.getElementById('tide-info');
 
-    function updateToggleButton() {
+    function updateTideToggleButton() {
       if (isTideEnabled) {
         tideToggleButton.textContent = 'Tide Info On';
         tideToggleButton.classList.remove('off');
@@ -732,17 +789,16 @@
         tideToggleButton.textContent = 'Tide Info Off';
         tideToggleButton.classList.add('off');
         tideToggleButton.setAttribute('aria-label', 'Turn tide information on');
-        tideInfo.style.display = 'none'; // Hide tide info when disabled
+        tideInfo.style.display = 'none';
       }
     }
 
     tideToggleButton.addEventListener('click', () => {
       isTideEnabled = !isTideEnabled;
-      updateToggleButton();
+      updateTideToggleButton();
     });
 
-    // Initialize button state
-    updateToggleButton();
+    updateTideToggleButton();
 
     // Map click event to fetch tide data only when tide is enabled
     map.on('click', function(e) {
@@ -753,6 +809,297 @@
         fetchTideData(lat, long);
       }
     });
+
+    // Shared functionality for distribution layers
+    const distributionColors = {
+      '1': '#FF0000', // Red for Type 1
+      '2': '#0000FF', // Blue for Type 2
+      '3': '#00FF00', // Green for Type 3
+      '4': '#FFFF00'  // Yellow for Type 4
+    };
+
+    let distTypeProperty = 'distribution type'; // Default property name
+
+    function getFeatureStyle(feature) {
+      const props = feature.properties || {};
+      const distType = props[distTypeProperty] ? String(props[distTypeProperty]) : null;
+      const color = distType && distributionColors[distType] ? distributionColors[distType] : '#6666ff'; // Fallback to light blue
+
+      return {
+        color: color,
+        weight: 2,
+        opacity: 0.8,
+        fillColor: color,
+        fillOpacity: 0.4
+      };
+    }
+
+    function createLegend(species) {
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'leaflet-control-legend');
+        div.innerHTML = `<strong>${species} Annual Distribution</strong><br>`;
+        Object.keys(distributionColors).forEach(type => {
+          div.innerHTML += `
+            <div class="legend-item">
+              <div class="legend-color" style="background-color: ${distributionColors[type]};"></div>
+              <span>Type ${type}</span>
+            </div>
+          `;
+        });
+        return div;
+      };
+      return legend;
+    }
+
+    function loadDistributionLayer(url, layer, species, toggleButton, legend, isEnabled, uniqueDistTypes) {
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            console.error(`Failed to load ${species} GeoJSON: HTTP ${response.status} - ${response.statusText}`);
+            alert(`Failed to load ${species} distribution data. Please check the GeoJSON file URL.`);
+            return null;
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data) {
+            if (!data.features || data.features.length === 0) {
+              console.error(`${species} GeoJSON contains no features`);
+              alert(`${species} distribution GeoJSON is empty or invalid.`);
+              return;
+            }
+            console.log(`Number of features in ${species} GeoJSON:`, data.features.length);
+            const sampleFeature = data.features[0];
+            const props = sampleFeature.properties || {};
+            const propNames = Object.keys(props);
+            const possibleDistKeys = propNames.filter(key => 
+              key.toLowerCase().includes('dist') || key.toLowerCase().includes('type')
+            );
+            console.log(`Possible distribution type keys for ${species}:`, possibleDistKeys);
+            const likelyKey = possibleDistKeys.find(key => key.toLowerCase().includes('dist') && key.toLowerCase().includes('type')) || 'distribution type';
+            if (likelyKey !== distTypeProperty) {
+              console.log(`Updating distribution type property for ${species} to: ${likelyKey}`);
+              distTypeProperty = likelyKey;
+            }
+            layer.addData(data);
+            console.log(`Features added to ${species} layer:`, layer.getLayers().length);
+            updateToggleButton();
+            console.log(`${species} GeoJSON loaded successfully:`, data);
+            console.log(`Unique distribution types for ${species}:`, Array.from(uniqueDistTypes));
+            // Log bounds for debugging, but don't use for zooming
+            try {
+              const bounds = layer.getBounds();
+              if (bounds.isValid()) {
+                console.log(`${species} GeoJSON bounds:`, bounds.toBBoxString());
+              } else {
+                console.warn(`Invalid ${species} GeoJSON bounds`);
+              }
+            } catch (error) {
+              console.error(`Error computing ${species} GeoJSON bounds:`, error);
+            }
+          }
+        })
+        .catch(error => {
+          console.error(`Error fetching ${species} GeoJSON:`, error);
+          alert(`Error loading ${species} distribution data. Please try again later.`);
+        });
+
+      function updateToggleButton() {
+        if (isEnabled) {
+          toggleButton.textContent = `${species} Dist On`;
+          toggleButton.classList.remove('off');
+          toggleButton.setAttribute('aria-label', `Turn ${species} distribution off`);
+          map.addLayer(layer);
+          legend.addTo(map);
+        } else {
+          toggleButton.textContent = `${species} Dist Off`;
+          toggleButton.classList.add('off');
+          toggleButton.setAttribute('aria-label', `Turn ${species} distribution on`);
+          map.removeLayer(layer);
+          map.removeControl(legend);
+        }
+      }
+
+      toggleButton.addEventListener('click', () => {
+        isEnabled = !isEnabled;
+        updateToggleButton();
+        if (isEnabled) {
+          // Always center on Wellington when toggling on
+          map.setView([-41.313, 174.77], 11);
+        }
+      });
+
+      updateToggleButton();
+    }
+
+    // Snapper distribution layer
+    let isSnapperEnabled = true;
+    let snapperLayer;
+    const snapperUniqueDistTypes = new Set();
+
+    snapperLayer = L.geoJSON(null, {
+      style: getFeatureStyle,
+      onEachFeature: function (feature, layer) {
+        const props = feature.properties || {};
+        console.log('Snapper GeoJSON Feature Properties:', props);
+        const propNames = Object.keys(props);
+        console.log('Property names in Snapper feature:', propNames);
+        const distType = props[distTypeProperty] ? String(props[distTypeProperty]) : null;
+        if (distType) {
+          snapperUniqueDistTypes.add(distType);
+          console.log(`Snapper Feature distribution type (${distTypeProperty}): ${distType}, Color: ${distributionColors[distType] || '#6666ff'}`);
+        } else {
+          console.warn(`Missing or invalid "${distTypeProperty}" for Snapper feature:`, props);
+        }
+        if (props) {
+          let popupContent = '<strong>Snapper Annual Distribution</strong><br>';
+          for (let prop in props) {
+            popupContent += `${prop}: ${props[prop]}<br>`;
+          }
+          layer.bindPopup(popupContent);
+        }
+      }
+    }).addTo(map);
+
+    const snapperLegend = createLegend('Snapper');
+    const snapperToggleButton = document.getElementById('snapper-toggle');
+
+    loadDistributionLayer(
+      'https://raw.githubusercontent.com/khandangit/wellyfishing/main/Red_Snapper_-_Annual_Distribution.geojson',
+      snapperLayer,
+      'Snapper',
+      snapperToggleButton,
+      snapperLegend,
+      isSnapperEnabled,
+      snapperUniqueDistTypes
+    );
+
+    // Kingfish distribution layer
+    let isKingfishEnabled = true;
+    let kingfishLayer;
+    const kingfishUniqueDistTypes = new Set();
+
+    kingfishLayer = L.geoJSON(null, {
+      style: getFeatureStyle,
+      onEachFeature: function (feature, layer) {
+        const props = feature.properties || {};
+        console.log('Kingfish GeoJSON Feature Properties:', props);
+        const propNames = Object.keys(props);
+        console.log('Property names in Kingfish feature:', propNames);
+        const distType = props[distTypeProperty] ? String(props[distTypeProperty]) : null;
+        if (distType) {
+          kingfishUniqueDistTypes.add(distType);
+          console.log(`Kingfish Feature distribution type (${distTypeProperty}): ${distType}, Color: ${distributionColors[distType] || '#6666ff'}`);
+        } else {
+          console.warn(`Missing or invalid "${distTypeProperty}" for Kingfish feature:`, props);
+        }
+        if (props) {
+          let popupContent = '<strong>Kingfish Annual Distribution</strong><br>';
+          for (let prop in props) {
+            popupContent += `${prop}: ${props[prop]}<br>`;
+          }
+          layer.bindPopup(popupContent);
+        }
+      }
+    }).addTo(map);
+
+    const kingfishLegend = createLegend('Kingfish');
+    const kingfishToggleButton = document.getElementById('kingfish-toggle');
+
+    loadDistributionLayer(
+      'https://raw.githubusercontent.com/khandangit/wellyfishing/main/Kingfish_-_Annual_Distribution.geojson',
+      kingfishLayer,
+      'Kingfish',
+      kingfishToggleButton,
+      kingfishLegend,
+      isKingfishEnabled,
+      kingfishUniqueDistTypes
+    );
+
+    // Kahawai distribution layer
+    let isKahawaiEnabled = true;
+    let kahawaiLayer;
+    const kahawaiUniqueDistTypes = new Set();
+
+    kahawaiLayer = L.geoJSON(null, {
+      style: getFeatureStyle,
+      onEachFeature: function (feature, layer) {
+        const props = feature.properties || {};
+        console.log('Kahawai GeoJSON Feature Properties:', props);
+        const propNames = Object.keys(props);
+        console.log('Property names in Kahawai feature:', propNames);
+        const distType = props[distTypeProperty] ? String(props[distTypeProperty]) : null;
+        if (distType) {
+          kahawaiUniqueDistTypes.add(distType);
+          console.log(`Kahawai Feature distribution type (${distTypeProperty}): ${distType}, Color: ${distributionColors[distType] || '#6666ff'}`);
+        } else {
+          console.warn(`Missing or invalid "${distTypeProperty}" for Kahawai feature:`, props);
+        }
+        if (props) {
+          let popupContent = '<strong>Kahawai Annual Distribution</strong><br>';
+          for (let prop in props) {
+            popupContent += `${prop}: ${props[prop]}<br>`;
+          }
+          layer.bindPopup(popupContent);
+        }
+      }
+    }).addTo(map);
+
+    const kahawaiLegend = createLegend('Kahawai');
+    const kahawaiToggleButton = document.getElementById('kahawai-toggle');
+
+    loadDistributionLayer(
+      'https://raw.githubusercontent.com/khandangit/wellyfishing/main/Kahawai_-_Annual_Distribution.geojson',
+      kahawaiLayer,
+      'Kahawai',
+      kahawaiToggleButton,
+      kahawaiLegend,
+      isKahawaiEnabled,
+      kahawaiUniqueDistTypes
+    );
+
+    // Red Cod distribution layer
+    let isRedCodEnabled = true;
+    let redCodLayer;
+    const redCodUniqueDistTypes = new Set();
+
+    redCodLayer = L.geoJSON(null, {
+      style: getFeatureStyle,
+      onEachFeature: function (feature, layer) {
+        const props = feature.properties || {};
+        console.log('Red Cod GeoJSON Feature Properties:', props);
+        const propNames = Object.keys(props);
+        console.log('Property names in Red Cod feature:', propNames);
+        const distType = props[distTypeProperty] ? String(props[distTypeProperty]) : null;
+        if (distType) {
+          redCodUniqueDistTypes.add(distType);
+          console.log(`Red Cod Feature distribution type (${distTypeProperty}): ${distType}, Color: ${distributionColors[distType] || '#6666ff'}`);
+        } else {
+          console.warn(`Missing or invalid "${distTypeProperty}" for Red Cod feature:`, props);
+        }
+        if (props) {
+          let popupContent = '<strong>Red Cod Annual Distribution</strong><br>';
+          for (let prop in props) {
+            popupContent += `${prop}: ${props[prop]}<br>`;
+          }
+          layer.bindPopup(popupContent);
+        }
+      }
+    }).addTo(map);
+
+    const redCodLegend = createLegend('Red Cod');
+    const redCodToggleButton = document.getElementById('redcod-toggle');
+
+    loadDistributionLayer(
+      'https://raw.githubusercontent.com/khandangit/wellyfishing/main/Red_Cod_-_Annual_Distribution.geojson',
+      redCodLayer,
+      'Red Cod',
+      redCodToggleButton,
+      redCodLegend,
+      isRedCodEnabled,
+      redCodUniqueDistTypes
+    );
 
     document.addEventListener('DOMContentLoaded', () => {
       // Form submission confirmation
