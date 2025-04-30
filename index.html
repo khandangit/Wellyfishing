@@ -873,7 +873,7 @@
     }
 
     function createLegend(species) {
-      const legend = L.control({ position: 'bottomright' });
+      const legend = L.control({ position: 'bottomleft' });
       legend.onAdd = function () {
         const div = L.DomUtil.create('div', 'leaflet-control-legend');
         div.innerHTML = `<strong>${species} Annual Distribution</strong><br>`;
